@@ -12,7 +12,7 @@
           </svg>
         </button>
         
-        <div class="flex items-center space-x-1">
+        <Link href="/" class="flex items-center space-x-1">
           <div class="w-9 h-9 bg-red-600 rounded flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
@@ -20,7 +20,7 @@
           </div>
           <span class="text-xl font-medium text-black hidden sm:block">YouTube</span>
           <span class="text-xs text-gray-500 hidden sm:block ml-1">JP</span>
-        </div>
+        </Link>
       </div>
 
       <!-- Center section: Search -->
@@ -31,6 +31,7 @@
               type="text" 
               placeholder="検索" 
               v-model="searchQuery"
+              @keyup.enter="performSearch"
               class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-l-full focus:outline-none focus:border-blue-500 text-sm"
             >
             <button 
@@ -43,7 +44,10 @@
               </svg>
             </button>
           </div>
-          <button class="px-6 py-2 bg-gray-50 border border-l-0 border-gray-300 rounded-r-full hover:bg-gray-100 transition-colors">
+          <button 
+            @click="performSearch"
+            class="px-6 py-2 bg-gray-50 border border-l-0 border-gray-300 rounded-r-full hover:bg-gray-100 transition-colors"
+          >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
@@ -65,8 +69,8 @@
           </svg>
         </button>
         
-        <!-- Create button -->
-        <div class="flex items-center space-x-1">
+        <!-- Create button (only for authenticated users) -->
+        <div v-if="$page.props.auth.user" class="flex items-center space-x-1">
           <button class="p-2 rounded-full hover:bg-gray-100 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -75,17 +79,97 @@
           <span class="text-sm hidden lg:block">作成</span>
         </div>
         
-        <!-- Notifications -->
-        <button class="p-2 rounded-full hover:bg-gray-100 transition-colors relative">
+        <!-- Notifications (only for authenticated users) -->
+        <button 
+          v-if="$page.props.auth.user"
+          class="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+        >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5-5-5h5zm0 0V3"></path>
           </svg>
           <div class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
         </button>
         
-        <!-- User avatar -->
-        <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-semibold text-sm cursor-pointer hover:opacity-90 transition-opacity">
-          ア
+        <!-- User menu / Login button -->
+        <div v-if="$page.props.auth.user" class="relative">
+          <button 
+            @click="toggleUserMenu"
+            class="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              {{ userInitial }}
+            </div>
+          </button>
+          
+          <!-- User dropdown menu -->
+          <div 
+            v-show="showUserMenu"
+            class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+          >
+            <div class="px-4 py-3 border-b border-gray-200">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-semibold">
+                  {{ userInitial }}
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{{ $page.props.auth.user.name }}</p>
+                  <p class="text-xs text-gray-500">{{ $page.props.auth.user.email }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="py-1">
+              <Link 
+                href="/user/profile" 
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                プロフィール
+              </Link>
+              
+              <Link 
+                href="/dashboard" 
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                </svg>
+                ダッシュボード
+              </Link>
+              
+              <div class="border-t border-gray-200 my-1"></div>
+              
+              <form @submit.prevent="logout">
+                <button 
+                  type="submit"
+                  class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                  </svg>
+                  ログアウト
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Login/Register buttons for guests -->
+        <div v-else class="flex items-center space-x-2">
+          <Link 
+            href="/login"
+            class="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            ログイン
+          </Link>
+          <Link 
+            href="/register"
+            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors"
+          >
+            登録
+          </Link>
         </div>
       </div>
     </div>
@@ -93,11 +177,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
 
 const searchQuery = ref('')
+const showUserMenu = ref(false)
 
-const emit = defineEmits(['toggle-sidebar'])
+const emit = defineEmits(['toggle-sidebar', 'search'])
 
 const toggleSidebar = () => {
   emit('toggle-sidebar')
@@ -106,4 +192,39 @@ const toggleSidebar = () => {
 const clearSearch = () => {
   searchQuery.value = ''
 }
+
+const performSearch = () => {
+  if (searchQuery.value.trim()) {
+    emit('search', searchQuery.value.trim())
+  }
+}
+
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+}
+
+const userInitial = computed(() => {
+  const user = window.page?.props?.auth?.user
+  return user?.name ? user.name.charAt(0).toUpperCase() : 'U'
+})
+
+const logout = () => {
+  router.post('/logout')
+}
+
+// Close user menu when clicking outside
+const handleClickOutside = (event) => {
+  const userMenu = event.target.closest('.relative')
+  if (!userMenu) {
+    showUserMenu.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script> 

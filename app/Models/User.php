@@ -29,6 +29,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'channel_name',
+        'channel_description',
+        'subscriber_count',
+        'total_views',
+        'video_count',
     ];
 
     /**
@@ -50,6 +55,7 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_photo_url',
+        'channel_initial',
     ];
 
     /**
@@ -62,6 +68,63 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'subscriber_count' => 'integer',
+            'total_views' => 'integer',
+            'video_count' => 'integer',
         ];
+    }
+
+    /**
+     * Get the user's channel name or fallback to their name.
+     */
+    public function getChannelNameAttribute($value)
+    {
+        return $value ?: $this->name;
+    }
+
+    /**
+     * Get the first character of the user's name for the avatar.
+     */
+    public function getChannelInitialAttribute()
+    {
+        return strtoupper(substr($this->name, 0, 1));
+    }
+
+    /**
+     * Format the subscriber count in Japanese style.
+     */
+    public function getFormattedSubscriberCountAttribute()
+    {
+        if ($this->subscriber_count >= 10000) {
+            return number_format($this->subscriber_count / 10000, 1) . '万';
+        }
+        return number_format($this->subscriber_count);
+    }
+
+    /**
+     * Format the total views in Japanese style.
+     */
+    public function getFormattedTotalViewsAttribute()
+    {
+        if ($this->total_views >= 10000) {
+            return number_format($this->total_views / 10000, 1) . '万';
+        }
+        return number_format($this->total_views);
+    }
+
+    /**
+     * Get videos owned by this user/channel.
+     */
+    public function videos()
+    {
+        return $this->hasMany(Video::class);
+    }
+
+    /**
+     * Get published videos only.
+     */
+    public function publishedVideos()
+    {
+        return $this->videos()->where('status', 'published');
     }
 }
