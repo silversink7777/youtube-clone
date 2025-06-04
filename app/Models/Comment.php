@@ -69,6 +69,56 @@ class Comment extends Model
     }
 
     /**
+     * いいねとの関連
+     */
+    public function likes(): HasMany
+    {
+        return $this->hasMany(CommentLike::class, 'comment_id', 'id');
+    }
+
+    /**
+     * きらいとの関連
+     */
+    public function dislikes(): HasMany
+    {
+        return $this->hasMany(CommentDislike::class, 'comment_id', 'id');
+    }
+
+    /**
+     * 特定のユーザーがいいねしているかチェック
+     */
+    public function isLikedBy($userId): bool
+    {
+        if (!$userId) return false;
+        return $this->likes()->where('user_id', $userId)->exists();
+    }
+
+    /**
+     * 特定のユーザーがきらいしているかチェック
+     */
+    public function isDislikedBy($userId): bool
+    {
+        if (!$userId) return false;
+        return $this->dislikes()->where('user_id', $userId)->exists();
+    }
+
+    /**
+     * いいね数を取得
+     */
+    public function getLikesCountAttribute(): int
+    {
+        return $this->likes()->count();
+    }
+
+    /**
+     * きらい数を取得
+     */
+    public function getDislikesCountAttribute(): int
+    {
+        return $this->dislikes()->count();
+    }
+
+    /**
      * トップレベルコメント（返信ではないコメント）のスコープ
      */
     public function scopeTopLevel($query)
@@ -105,28 +155,40 @@ class Comment extends Model
      */
     public function getTimeAgoAttribute(): string
     {
-        $diffInMinutes = $this->created_at->diffInMinutes(now());
+        $now = now();
+        $diffInMinutes = $this->created_at->diffInMinutes($now);
         
+        // 1分未満は「たった今」
+        if ($diffInMinutes < 1) {
+            return 'たった今';
+        }
+        
+        // 60分未満は分単位（整数）
         if ($diffInMinutes < 60) {
-            return $diffInMinutes . '分前';
+            return intval($diffInMinutes) . '分前';
         }
         
-        $diffInHours = $this->created_at->diffInHours(now());
+        $diffInHours = $this->created_at->diffInHours($now);
         if ($diffInHours < 24) {
-            return $diffInHours . '時間前';
+            return intval($diffInHours) . '時間前';
         }
         
-        $diffInDays = $this->created_at->diffInDays(now());
+        $diffInDays = $this->created_at->diffInDays($now);
+        if ($diffInDays < 7) {
+            return intval($diffInDays) . '日前';
+        }
+        
         if ($diffInDays < 30) {
-            return $diffInDays . '日前';
+            $weeks = intval($diffInDays / 7);
+            return $weeks . '週前';
         }
         
-        $diffInMonths = $this->created_at->diffInMonths(now());
+        $diffInMonths = $this->created_at->diffInMonths($now);
         if ($diffInMonths < 12) {
-            return $diffInMonths . 'か月前';
+            return intval($diffInMonths) . 'か月前';
         }
         
-        $diffInYears = $this->created_at->diffInYears(now());
-        return $diffInYears . '年前';
+        $diffInYears = $this->created_at->diffInYears($now);
+        return intval($diffInYears) . '年前';
     }
 }

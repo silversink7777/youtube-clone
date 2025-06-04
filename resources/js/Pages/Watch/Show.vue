@@ -237,7 +237,13 @@
                       <!-- アクションボタン（削除されたコメントには表示しない） -->
                       <div v-if="!comment.is_deleted" class="flex items-center space-x-4">
                         <!-- Like button -->
-                        <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                        <button 
+                          @click="toggleLike(comment)"
+                          :class="[
+                            'flex items-center space-x-1 transition-colors',
+                            comment.is_liked ? 'text-blue-600' : 'text-gray-600 hover:text-black'
+                          ]"
+                        >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
                           </svg>
@@ -245,10 +251,17 @@
                         </button>
                         
                         <!-- Dislike button -->
-                        <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                        <button 
+                          @click="toggleDislike(comment)"
+                          :class="[
+                            'flex items-center space-x-1 transition-colors',
+                            comment.is_disliked ? 'text-red-600' : 'text-gray-600 hover:text-black'
+                          ]"
+                        >
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13v-9m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
                           </svg>
+                          <span v-if="comment.dislikes_count > 0" class="text-xs">{{ comment.dislikes_count }}</span>
                         </button>
                         
                         <!-- Reply button -->
@@ -342,18 +355,31 @@
                             <!-- 返信のアクションボタン（削除されたコメントには表示しない） -->
                             <div v-if="!reply.is_deleted" class="flex items-center space-x-4">
                               <!-- Like button for reply -->
-                              <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                              <button 
+                                @click="toggleLike(reply)"
+                                :class="[
+                                  'flex items-center space-x-1 transition-colors',
+                                  reply.is_liked ? 'text-blue-600' : 'text-gray-600 hover:text-black'
+                                ]"
+                              >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.60L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
                                 </svg>
                                 <span v-if="reply.likes_count > 0" class="text-xs">{{ reply.likes_count }}</span>
                               </button>
                               
                               <!-- Dislike button for reply -->
-                              <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                              <button 
+                                @click="toggleDislike(reply)"
+                                :class="[
+                                  'flex items-center space-x-1 transition-colors',
+                                  reply.is_disliked ? 'text-red-600' : 'text-gray-600 hover:text-black'
+                                ]"
+                              >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0 .714.211-1.412.608-2.006L17 13v-9m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.60L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0 .714.211-1.412.608-2.006L17 13v-9m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
                                 </svg>
+                                <span v-if="reply.dislikes_count > 0" class="text-xs">{{ reply.dislikes_count }}</span>
                               </button>
 
                               <!-- Delete button for reply -->
@@ -750,6 +776,120 @@ const formatTimeAgo = (publishedAt) => {
   
   const diffInYears = Math.floor(diffInMonths / 12)
   return `${diffInYears} 年前`
+}
+
+const toggleLike = async (comment) => {
+  if (!authUser.value) {
+    alert('いいねするにはログインが必要です');
+    return;
+  }
+
+  try {
+    const csrfToken = getCSRFToken();
+    const response = await fetch(`/api/videos/${props.video.id}/comments/${comment.id}/like`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      
+      // コメントのいいね状態を更新
+      const updateComment = (comments, commentId) => {
+        for (let i = 0; i < comments.length; i++) {
+          if (comments[i].id === commentId) {
+            comments[i].is_liked = data.is_liked
+            comments[i].likes_count = data.likes_count
+            comments[i].is_disliked = data.is_disliked
+            comments[i].dislikes_count = data.dislikes_count
+            return true
+          }
+          // 返信コメントもチェック
+          if (comments[i].replies && comments[i].replies.length > 0) {
+            if (updateComment(comments[i].replies, commentId)) {
+              return true
+            }
+          }
+        }
+        return false
+      }
+      
+      updateComment(comments.value, comment.id)
+      
+    } else {
+      let errorMessage = 'いいね処理に失敗しました';
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('エラーレスポンスのパースに失敗:', parseError);
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('いいねエラー:', error)
+    alert('いいね処理に失敗しました: ' + error.message)
+  }
+}
+
+const toggleDislike = async (comment) => {
+  if (!authUser.value) {
+    alert('きらいするにはログインが必要です');
+    return;
+  }
+
+  try {
+    const csrfToken = getCSRFToken();
+    const response = await fetch(`/api/videos/${props.video.id}/comments/${comment.id}/dislike`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      
+      // コメントのきらい状態を更新
+      const updateComment = (comments, commentId) => {
+        for (let i = 0; i < comments.length; i++) {
+          if (comments[i].id === commentId) {
+            comments[i].is_liked = data.is_liked
+            comments[i].likes_count = data.likes_count
+            comments[i].is_disliked = data.is_disliked
+            comments[i].dislikes_count = data.dislikes_count
+            return true
+          }
+          // 返信コメントもチェック
+          if (comments[i].replies && comments[i].replies.length > 0) {
+            if (updateComment(comments[i].replies, commentId)) {
+              return true
+            }
+          }
+        }
+        return false
+      }
+      
+      updateComment(comments.value, comment.id)
+      
+    } else {
+      let errorMessage = 'きらい処理に失敗しました';
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('エラーレスポンスのパースに失敗:', parseError);
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('きらいエラー:', error)
+    alert('きらい処理に失敗しました: ' + error.message)
+  }
 }
 
 // コンポーネントマウント時にコメントを読み込み

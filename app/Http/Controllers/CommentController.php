@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Video;
+use App\Models\CommentLike;
+use App\Models\CommentDislike;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -180,6 +182,140 @@ class CommentController extends Controller
     }
 
     /**
+     * コメントにいいね/いいね解除
+     */
+    public function toggleLike($videoId, $commentId)
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'ログインが必要です'], 401);
+        }
+
+        try {
+            $comment = Comment::where('video_id', $videoId)
+                ->where('id', $commentId)
+                ->firstOrFail();
+
+            $userId = Auth::id();
+            $existingLike = CommentLike::where('comment_id', $commentId)
+                ->where('user_id', $userId)
+                ->first();
+
+            if ($existingLike) {
+                // いいね解除
+                $existingLike->delete();
+                $action = 'unliked';
+                $message = 'いいねを解除しました';
+            } else {
+                // いいねする前に、既存のきらいを削除
+                CommentDislike::where('comment_id', $commentId)
+                    ->where('user_id', $userId)
+                    ->delete();
+
+                // いいね追加
+                CommentLike::create([
+                    'comment_id' => $commentId,
+                    'user_id' => $userId
+                ]);
+                $action = 'liked';
+                $message = 'いいねしました';
+            }
+
+            // 最新のいいね数ときらい数を取得
+            $likesCount = CommentLike::where('comment_id', $commentId)->count();
+            $dislikesCount = CommentDislike::where('comment_id', $commentId)->count();
+
+            return response()->json([
+                'action' => $action,
+                'message' => $message,
+                'likes_count' => $likesCount,
+                'dislikes_count' => $dislikesCount,
+                'is_liked' => $action === 'liked',
+                'is_disliked' => false
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (\Exception $e) {
+            \Log::error('いいね機能エラー', [
+                'error' => $e->getMessage(),
+                'comment_id' => $commentId,
+                'user_id' => Auth::id(),
+                'stack' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'いいね処理中にエラーが発生しました',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * コメントにきらい/きらい解除
+     */
+    public function toggleDislike($videoId, $commentId)
+    {
+        if (!Auth::check()) {
+            return response()->json(['error' => 'ログインが必要です'], 401);
+        }
+
+        try {
+            $comment = Comment::where('video_id', $videoId)
+                ->where('id', $commentId)
+                ->firstOrFail();
+
+            $userId = Auth::id();
+            $existingDislike = CommentDislike::where('comment_id', $commentId)
+                ->where('user_id', $userId)
+                ->first();
+
+            if ($existingDislike) {
+                // きらい解除
+                $existingDislike->delete();
+                $action = 'undisliked';
+                $message = 'きらいを解除しました';
+            } else {
+                // きらいする前に、既存のいいねを削除
+                CommentLike::where('comment_id', $commentId)
+                    ->where('user_id', $userId)
+                    ->delete();
+
+                // きらい追加
+                CommentDislike::create([
+                    'comment_id' => $commentId,
+                    'user_id' => $userId
+                ]);
+                $action = 'disliked';
+                $message = 'きらいしました';
+            }
+
+            // 最新のいいね数ときらい数を取得
+            $likesCount = CommentLike::where('comment_id', $commentId)->count();
+            $dislikesCount = CommentDislike::where('comment_id', $commentId)->count();
+
+            return response()->json([
+                'action' => $action,
+                'message' => $message,
+                'likes_count' => $likesCount,
+                'dislikes_count' => $dislikesCount,
+                'is_liked' => false,
+                'is_disliked' => $action === 'disliked'
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (\Exception $e) {
+            \Log::error('きらい機能エラー', [
+                'error' => $e->getMessage(),
+                'comment_id' => $commentId,
+                'user_id' => Auth::id(),
+                'stack' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'きらい処理中にエラーが発生しました',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * コメントデータをフォーマット
      */
     private function formatComment(Comment $comment): array
@@ -190,8 +326,11 @@ class CommentController extends Controller
                 'id' => $comment->id,
                 'content' => 'このコメントは削除されました',
                 'likes_count' => 0,
+                'dislikes_count' => 0,
                 'is_pinned' => false,
                 'is_deleted' => true,
+                'is_liked' => false,
+                'is_disliked' => false,
                 'time_ago' => $comment->time_ago,
                 'created_at' => $comment->created_at->toISOString(),
                 'user' => [
@@ -208,13 +347,28 @@ class CommentController extends Controller
             ];
         }
 
+        // いいね数の取得
+        $likesCount = CommentLike::where('comment_id', $comment->id)->count();
+        $isLiked = Auth::check() ? CommentLike::where('comment_id', $comment->id)
+            ->where('user_id', Auth::id())
+            ->exists() : false;
+
+        // きらい数の取得
+        $dislikesCount = CommentDislike::where('comment_id', $comment->id)->count();
+        $isDisliked = Auth::check() ? CommentDislike::where('comment_id', $comment->id)
+            ->where('user_id', Auth::id())
+            ->exists() : false;
+
         // 通常のコメント
         return [
             'id' => $comment->id,
             'content' => $comment->content,
-            'likes_count' => $comment->likes_count,
+            'likes_count' => $likesCount,
+            'dislikes_count' => $dislikesCount,
             'is_pinned' => $comment->is_pinned,
             'is_deleted' => false,
+            'is_liked' => $isLiked,
+            'is_disliked' => $isDisliked,
             'time_ago' => $comment->time_ago,
             'created_at' => $comment->created_at->toISOString(),
             'user' => [

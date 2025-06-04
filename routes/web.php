@@ -43,4 +43,6 @@ Route::prefix('api/videos/{video}/comments')->group(function () {
     Route::post('/', [CommentController::class, 'store'])->name('comments.store')->middleware('auth');
     Route::delete('/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy')->middleware('auth');
     Route::patch('/{comment}/pin', [CommentController::class, 'togglePin'])->name('comments.pin')->middleware('auth');
+    Route::post('/{comment}/like', [CommentController::class, 'toggleLike'])->name('comments.like')->middleware('auth');
+    Route::post('/{comment}/dislike', [CommentController::class, 'toggleDislike'])->name('comments.dislike')->middleware('auth');
 });
