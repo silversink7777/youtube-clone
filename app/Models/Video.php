@@ -17,6 +17,7 @@ class Video extends Model
         'title',
         'description',
         'thumbnail',
+        'video_url',
         'duration',
         'user_id',
         'category',

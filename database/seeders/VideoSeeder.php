@@ -112,7 +112,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => '【今夏移籍】レオ ゴメス（ジュビロ磐田→京都サンガF.C.）悲願のJ1制覇へ繋...',
                 'description' => 'DAZN提供のサッカー動画です。',
-                'thumbnail' => 'https://via.placeholder.com/320x180/FF0000/FFFFFF?text=DAZN+Video',
+                'thumbnail' => 'https://picsum.photos/320/180?random=1',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
                 'duration' => '6:17',
                 'user_id' => $user1->id,
                 'category' => 'sports',
@@ -123,7 +124,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => 'はじめてのアイス もちたろう',
                 'description' => 'もちたろうの可愛い動画です。',
-                'thumbnail' => 'https://via.placeholder.com/320x180/FFB347/FFFFFF?text=Cute+Video',
+                'thumbnail' => 'https://picsum.photos/320/180?random=2',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
                 'duration' => '0:50',
                 'user_id' => $user2->id,
                 'category' => 'pets',
@@ -134,7 +136,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => '自分のこだと思い込み母親のように接するゴールデンレトリバーが優しすぎました...',
                 'description' => 'ゴールデンレトリバーの優しい動画です。',
-                'thumbnail' => 'https://via.placeholder.com/320x180/87CEEB/FFFFFF?text=Golden+Retriever',
+                'thumbnail' => 'https://picsum.photos/320/180?random=3',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
                 'duration' => '9:10',
                 'user_id' => $user3->id,
                 'category' => 'pets',
@@ -145,7 +148,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => 'サンプル動画のタイトルがここに表示されます',
                 'description' => 'エンターテイメント動画のサンプルです。',
-                'thumbnail' => 'https://via.placeholder.com/320x180/FF6B6B/FFFFFF?text=Sample+Video',
+                'thumbnail' => 'https://picsum.photos/320/180?random=4',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
                 'duration' => '12:35',
                 'user_id' => $user4->id,
                 'category' => 'entertainment',
@@ -156,7 +160,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => '別のサンプル動画のタイトル',
                 'description' => '教育関連の動画です。',
-                'thumbnail' => 'https://via.placeholder.com/320x180/4ECDC4/FFFFFF?text=Another+Video',
+                'thumbnail' => 'https://picsum.photos/320/180?random=5',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
                 'duration' => '8:22',
                 'user_id' => $user5->id,
                 'category' => 'education',
@@ -167,7 +172,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => '長いタイトルの動画サンプルです。これは非常に長いタイトルの例で、複数行にわたって表示される可能性があります。',
                 'description' => 'テクノロジー関連の動画です。',
-                'thumbnail' => 'https://via.placeholder.com/320x180/FFE66D/000000?text=Long+Title+Video',
+                'thumbnail' => 'https://picsum.photos/320/180?random=6',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
                 'duration' => '15:43',
                 'user_id' => $user6->id,
                 'category' => 'technology',
@@ -179,7 +185,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => '重要なニュースのタイトルがここに表示されます',
                 'description' => 'TBS NEWS DIGからの重要なニュースです。',
-                'thumbnail' => 'https://via.placeholder.com/400x225/FF4757/FFFFFF?text=TBS+NEWS',
+                'thumbnail' => 'https://picsum.photos/400/225?random=7',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
                 'duration' => '3:45',
                 'user_id' => $userTBS->id,
                 'category' => 'news',
@@ -190,7 +197,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => 'ウクライナ【クリミア大橋】の一部を爆破 除去作業公開',
                 'description' => '日テレNEWSからの国際ニュースです。',
-                'thumbnail' => 'https://via.placeholder.com/400x225/2ED573/FFFFFF?text=日テレNEWS',
+                'thumbnail' => 'https://picsum.photos/400/225?random=8',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
                 'duration' => '5:22',
                 'user_id' => $userNTV->id,
                 'category' => 'news',
@@ -201,7 +209,8 @@ class VideoSeeder extends Seeder
             [
                 'title' => '最新の社会情勢に関するニュース',
                 'description' => 'めざましテレビからの社会ニュースです。',
-                'thumbnail' => 'https://via.placeholder.com/400x225/FF6B9D/FFFFFF?text=めざましテレビ',
+                'thumbnail' => 'https://picsum.photos/400/225?random=9',
+                'video_url' => 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
                 'duration' => '4:18',
                 'user_id' => $userMezamashi->id,
                 'category' => 'news',

@@ -68,15 +68,24 @@ class VideoController extends Controller
      */
     public function show(int $id)
     {
-        $video = $this->videoRepository->findById($id);
+        try {
+            $video = $this->videoRepository->findById($id);
 
-        if (!$video) {
-            abort(404);
+            if (!$video) {
+                \Log::error("Video not found with ID: {$id}");
+                abort(404, "動画が見つかりません");
+            }
+
+            $videoData = $this->videoRepository->transformToArray($video);
+            \Log::info("Video data loaded successfully", ['video_id' => $id, 'title' => $video->title]);
+
+            return Inertia::render('Watch/Show', [
+                'video' => $videoData,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Error loading video {$id}: " . $e->getMessage());
+            abort(500, "動画の読み込み中にエラーが発生しました");
         }
-
-        return Inertia::render('Video/Show', [
-            'video' => $this->videoRepository->transformToArray($video),
-        ]);
     }
 
     /**

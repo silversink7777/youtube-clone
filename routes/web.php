@@ -34,3 +34,4 @@ Route::prefix('api')->group(function () {
 });
 
 // Individual video route
+Route::get('/watch/{id}', [VideoController::class, 'show'])->name('video.show');

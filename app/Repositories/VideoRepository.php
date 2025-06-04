@@ -112,7 +112,9 @@ class VideoRepository implements VideoRepositoryInterface
         return [
             'id' => $video->id,
             'title' => $video->title,
+            'description' => $video->description,
             'thumbnail' => $video->thumbnail,
+            'video_url' => $video->video_url,
             'duration' => $video->duration,
             'channelName' => $channelName,
             'channelInitial' => $channelInitial,

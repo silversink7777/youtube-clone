@@ -26,6 +26,17 @@ class VideoFactory extends Factory
             'title' => $this->faker->sentence(6),
             'description' => $this->faker->paragraph(3),
             'thumbnail' => 'https://via.placeholder.com/320x180/FF6B6B/FFFFFF?text=' . urlencode($this->faker->word),
+            'video_url' => $this->faker->randomElement([
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4'
+            ]),
             'duration' => $this->faker->randomElement(['1:30', '2:45', '5:12', '8:33', '12:15', '15:45']),
             'user_id' => User::factory(),
             'category' => $this->faker->randomElement($categories),
