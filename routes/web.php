@@ -3,10 +3,9 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\VideoController;
 
-Route::get('/', function () {
-    return Inertia::render('YouTube');
-});
+Route::get('/', [VideoController::class, 'index']);
 
 Route::get('/welcome', function () {
     return Inertia::render('Welcome', [
@@ -26,3 +25,12 @@ Route::middleware([
         return Inertia::render('Dashboard');
     })->name('dashboard');
 });
+
+// API routes for videos
+Route::prefix('api')->group(function () {
+    Route::get('/videos', [VideoController::class, 'apiIndex']);
+    Route::get('/videos/category/{category}', [VideoController::class, 'byCategory']);
+    Route::get('/videos/search', [VideoController::class, 'search']);
+});
+
+// Individual video route
