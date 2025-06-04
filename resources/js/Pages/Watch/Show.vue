@@ -149,7 +149,9 @@
             <!-- Comments Section -->
             <div class="mt-8">
               <div class="flex items-center space-x-4 mb-6">
-                <h3 class="text-xl font-semibold text-black">コメント</h3>
+                <h3 class="text-xl font-semibold text-black">
+                  コメント ({{ comments.length }})
+                </h3>
                 <button class="flex items-center space-x-1 text-sm text-gray-600 hover:text-black">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>
@@ -158,26 +160,228 @@
                 </button>
               </div>
               
+
               <!-- Add Comment -->
-              <div v-if="$page.props.auth.user" class="flex space-x-3 mb-6">
+              <div v-if="authUser" class="flex space-x-3 mb-6">
                 <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                  {{ $page.props.auth.user.name.charAt(0).toUpperCase() }}
+                  {{ authUser.name.charAt(0).toUpperCase() }}
                 </div>
                 <div class="flex-1">
-                  <input 
-                    type="text" 
-                    placeholder="コメントを追加..."
-                    class="w-full bg-transparent border-0 border-b border-gray-300 focus:border-black focus:ring-0 text-sm py-2"
-                  >
+                  <form @submit.prevent="submitComment">
+                    <textarea
+                      v-model="newComment"
+                      placeholder="コメントを追加..."
+                      class="w-full bg-transparent border-0 border-b border-gray-300 focus:border-black focus:ring-0 text-sm py-2 min-h-[36px] max-h-[100px] resize-none"
+                      rows="1"
+                      @focus="showCommentActions = true"
+                      @input="autoResize"
+                    ></textarea>
+                    <div v-if="showCommentActions" class="flex justify-end space-x-2 mt-2">
+                      <button
+                        type="button"
+                        @click="cancelComment"
+                        class="px-4 py-2 text-sm text-gray-600 hover:text-black"
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        type="submit"
+                        :disabled="!newComment.trim() || submittingComment"
+                        class="px-4 py-2 bg-blue-600 text-white text-sm rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {{ submittingComment ? '投稿中...' : 'コメント' }}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
 
-              <!-- Comments Placeholder -->
-              <div class="text-center py-8 text-gray-500">
+              <!-- Comments Loading -->
+              <div v-if="loadingComments" class="text-center py-8">
+                <svg class="w-8 h-8 text-gray-400 animate-spin mx-auto" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-sm text-gray-500 mt-2">コメントを読み込み中...</p>
+              </div>
+
+              <!-- Comments List -->
+              <div v-else-if="!loadingComments && comments && comments.length > 0" class="space-y-4">
+                <div v-for="comment in comments" :key="comment.id" class="comment-item">
+                  <!-- Main Comment -->
+                  <div class="flex space-x-3">
+                    <div :class="[
+                      'w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0',
+                      comment.is_deleted ? 'bg-gray-400' : 'bg-blue-500'
+                    ]">
+                      {{ comment.user.channel_initial || comment.user.name.charAt(0).toUpperCase() }}
+                    </div>
+                    
+                    <div class="flex-1">
+                      <div class="flex items-center space-x-2 mb-1">
+                        <span :class="[
+                          'font-medium text-sm',
+                          comment.is_deleted ? 'text-gray-500' : 'text-black'
+                        ]">{{ comment.user.channel_name || comment.user.name }}</span>
+                        <span v-if="comment.is_pinned && !comment.is_deleted" class="bg-red-600 text-white text-xs px-2 py-1 rounded font-medium">
+                          ピン留め
+                        </span>
+                        <span class="text-xs text-gray-600">{{ comment.time_ago }}</span>
+                      </div>
+                      
+                      <p :class="[
+                        'text-sm mb-2 whitespace-pre-wrap',
+                        comment.is_deleted ? 'text-gray-500 italic' : 'text-gray-800'
+                      ]">{{ comment.content }}</p>
+                      
+                      <!-- アクションボタン（削除されたコメントには表示しない） -->
+                      <div v-if="!comment.is_deleted" class="flex items-center space-x-4">
+                        <!-- Like button -->
+                        <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                          </svg>
+                          <span v-if="comment.likes_count > 0" class="text-xs">{{ comment.likes_count }}</span>
+                        </button>
+                        
+                        <!-- Dislike button -->
+                        <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13v-9m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                          </svg>
+                        </button>
+                        
+                        <!-- Reply button -->
+                        <button 
+                          v-if="authUser"
+                          @click="toggleReplyForm(comment.id)"
+                          class="text-xs text-gray-600 hover:text-black font-medium"
+                        >
+                          返信
+                        </button>
+
+                        <!-- Pin/Unpin button (video owner only) -->
+                        <button 
+                          v-if="canPinComment(comment)"
+                          @click="togglePin(comment)"
+                          class="text-xs text-gray-600 hover:text-black font-medium"
+                        >
+                          {{ comment.is_pinned ? 'ピン留め解除' : 'ピン留め' }}
+                        </button>
+
+                        <!-- Delete button -->
+                        <button 
+                          v-if="comment.can_delete"
+                          @click="deleteComment(comment)"
+                          class="text-xs text-red-600 hover:text-red-800 font-medium"
+                        >
+                          削除
+                        </button>
+                      </div>
+
+                      <!-- Reply Form -->
+                      <div v-if="replyingTo === comment.id" class="mt-3 ml-3">
+                        <form @submit.prevent="submitReply(comment.id)">
+                          <div class="flex space-x-3">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                              {{ authUser.name.charAt(0).toUpperCase() }}
+                            </div>
+                            <div class="flex-1">
+                              <textarea
+                                v-model="replyContent"
+                                :placeholder="`@${comment.user.channel_name || comment.user.name} に返信`"
+                                class="w-full bg-transparent border-0 border-b border-gray-300 focus:border-black focus:ring-0 text-sm py-2 min-h-[36px] max-h-[100px] resize-none"
+                                rows="1"
+                                @input="autoResize"
+                              ></textarea>
+                              <div class="flex justify-end space-x-2 mt-2">
+                                <button
+                                  type="button"
+                                  @click="cancelReply"
+                                  class="px-4 py-2 text-sm text-gray-600 hover:text-black"
+                                >
+                                  キャンセル
+                                </button>
+                                <button
+                                  type="submit"
+                                  :disabled="!replyContent.trim() || submittingReply"
+                                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {{ submittingReply ? '投稿中...' : '返信' }}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </form>
+                      </div>
+
+                      <!-- Replies -->
+                      <div v-if="comment.replies && comment.replies.length > 0" class="mt-4 ml-8 space-y-3">
+                        <div v-for="reply in comment.replies" :key="reply.id" class="flex space-x-3">
+                          <div :class="[
+                            'w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0',
+                            reply.is_deleted ? 'bg-gray-400' : 'bg-green-500'
+                          ]">
+                            {{ reply.user.channel_initial || reply.user.name.charAt(0).toUpperCase() }}
+                          </div>
+                          
+                          <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-1">
+                              <span :class="[
+                                'font-medium text-sm',
+                                reply.is_deleted ? 'text-gray-500' : 'text-black'
+                              ]">{{ reply.user.channel_name || reply.user.name }}</span>
+                              <span class="text-xs text-gray-600">{{ reply.time_ago }}</span>
+                            </div>
+                            
+                            <p :class="[
+                              'text-sm mb-2 whitespace-pre-wrap',
+                              reply.is_deleted ? 'text-gray-500 italic' : 'text-gray-800'
+                            ]">{{ reply.content }}</p>
+                            
+                            <!-- 返信のアクションボタン（削除されたコメントには表示しない） -->
+                            <div v-if="!reply.is_deleted" class="flex items-center space-x-4">
+                              <!-- Like button for reply -->
+                              <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                                </svg>
+                                <span v-if="reply.likes_count > 0" class="text-xs">{{ reply.likes_count }}</span>
+                              </button>
+                              
+                              <!-- Dislike button for reply -->
+                              <button class="flex items-center space-x-1 text-gray-600 hover:text-black">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018c.163 0 .326.02.485.06L17 4m-7 10v2a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0 .714.211-1.412.608-2.006L17 13v-9m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"></path>
+                                </svg>
+                              </button>
+
+                              <!-- Delete button for reply -->
+                              <button 
+                                v-if="reply.can_delete"
+                                @click="deleteComment(reply)"
+                                class="text-xs text-red-600 hover:text-red-800 font-medium"
+                              >
+                                削除
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- No Comments -->
+              <div v-else-if="!loadingComments && (!comments || comments.length === 0)" class="text-center py-8 text-gray-500">
                 <svg class="mx-auto h-12 w-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                 </svg>
-                <p class="text-sm">コメント機能は今後実装予定です</p>
+                <p class="text-sm">まだコメントはありません</p>
+                <p v-if="!authUser" class="text-xs mt-1">
+                  <Link href="/login" class="text-blue-600 hover:underline">ログイン</Link>してコメントを投稿しましょう
+                </p>
               </div>
             </div>
           </div>
@@ -225,8 +429,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { ref, computed, onMounted } from 'vue'
+import { router, usePage } from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3'
 import AppHeader from '../../Components/YouTube/AppHeader.vue'
 import AppSidebar from '../../Components/YouTube/AppSidebar.vue'
 
@@ -237,9 +442,20 @@ const props = defineProps({
   }
 })
 
+const page = usePage()
 const sidebarCollapsed = ref(true) // Always collapsed on video page
 const videoPlayer = ref(null)
 const showFullDescription = ref(false)
+
+// コメント関連のリアクティブデータ
+const comments = ref([])
+const loadingComments = ref(false)
+const newComment = ref('')
+const showCommentActions = ref(false)
+const submittingComment = ref(false)
+const replyingTo = ref(null)
+const replyContent = ref('')
+const submittingReply = ref(false)
 
 const toggleSidebar = () => {
   // Sidebar stays collapsed on video page for better viewing experience
@@ -263,6 +479,240 @@ const truncatedDescription = computed(() => {
   
   return props.video.description.substring(0, 150)
 })
+
+// 認証ユーザー情報のcomputed property
+const authUser = computed(() => page.props.auth?.user || null)
+
+// コメント機能のメソッド
+const getCSRFToken = () => {
+  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (!token) {
+    console.error('CSRF token not found');
+    throw new Error('CSRF token not found');
+  }
+  return token;
+};
+
+const loadComments = async () => {
+  loadingComments.value = true
+  try {
+    console.log('コメント読み込み開始:', props.video.id);
+    const response = await fetch(`/api/videos/${props.video.id}/comments`)
+    const data = await response.json()
+    console.log('コメントデータ受信:', data);
+    comments.value = data.comments || []
+    console.log('設定されたコメント配列:', comments.value);
+  } catch (error) {
+    console.error('コメントの読み込みに失敗しました:', error)
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+const submitComment = async () => {
+  if (!newComment.value.trim() || submittingComment.value) return
+  
+  submittingComment.value = true
+  try {
+    const csrfToken = getCSRFToken();
+    console.log('コメント投稿開始:', newComment.value);
+    const response = await fetch(`/api/videos/${props.video.id}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        content: newComment.value
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      console.log('投稿されたコメント:', data.comment);
+      comments.value.unshift(data.comment) // 新しいコメントを先頭に追加
+      console.log('更新後のコメント配列:', comments.value);
+      newComment.value = ''
+      showCommentActions.value = false
+    } else {
+      let errorMessage = 'コメントの投稿に失敗しました';
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        console.error('コメント投稿エラー詳細:', errorData);
+      } catch (parseError) {
+        console.error('エラーレスポンスのパースに失敗:', parseError);
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('コメント投稿エラー:', error)
+    alert('コメントの投稿に失敗しました: ' + error.message)
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+const submitReply = async (parentId) => {
+  if (!replyContent.value.trim() || submittingReply.value) return
+  
+  submittingReply.value = true
+  try {
+    const csrfToken = getCSRFToken();
+    const response = await fetch(`/api/videos/${props.video.id}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        content: replyContent.value,
+        parent_id: parentId
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      // 親コメントの返信リストに追加
+      const parentComment = comments.value.find(c => c.id === parentId)
+      if (parentComment) {
+        if (!parentComment.replies) {
+          parentComment.replies = []
+        }
+        parentComment.replies.push(data.comment)
+      }
+      replyContent.value = ''
+      replyingTo.value = null
+    } else {
+      let errorMessage = '返信の投稿に失敗しました';
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage;
+        console.error('返信投稿エラー詳細:', errorData);
+      } catch (parseError) {
+        console.error('エラーレスポンスのパースに失敗:', parseError);
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('返信投稿エラー:', error)
+    alert('返信の投稿に失敗しました: ' + error.message)
+  } finally {
+    submittingReply.value = false
+  }
+}
+
+const deleteComment = async (comment) => {
+  if (!confirm('このコメントを削除しますか？')) return
+  
+  try {
+    const csrfToken = getCSRFToken();
+    const response = await fetch(`/api/videos/${props.video.id}/comments/${comment.id}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+      }
+    })
+
+    if (response.ok) {
+      if (comment.parent_id) {
+        // 返信の場合
+        const parentComment = comments.value.find(c => c.id === comment.parent_id)
+        if (parentComment && parentComment.replies) {
+          parentComment.replies = parentComment.replies.filter(r => r.id !== comment.id)
+        }
+      } else {
+        // トップレベルコメントの場合
+        comments.value = comments.value.filter(c => c.id !== comment.id)
+      }
+    } else {
+      let errorMessage = 'コメントの削除に失敗しました';
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('エラーレスポンスのパースに失敗:', parseError);
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('コメント削除エラー:', error)
+    alert('コメントの削除に失敗しました: ' + error.message)
+  }
+}
+
+const togglePin = async (comment) => {
+  try {
+    const csrfToken = getCSRFToken();
+    const response = await fetch(`/api/videos/${props.video.id}/comments/${comment.id}/pin`, {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
+      }
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      // コメントのピン留め状態を更新
+      const commentIndex = comments.value.findIndex(c => c.id === comment.id)
+      if (commentIndex !== -1) {
+        comments.value[commentIndex].is_pinned = data.comment.is_pinned
+        // ピン留めされたコメントを先頭に移動
+        if (data.comment.is_pinned) {
+          const pinnedComment = comments.value.splice(commentIndex, 1)[0]
+          comments.value.unshift(pinnedComment)
+        }
+      }
+    } else {
+      let errorMessage = 'ピン留めの変更に失敗しました';
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorData.message || errorMessage;
+      } catch (parseError) {
+        console.error('エラーレスポンスのパースに失敗:', parseError);
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('ピン留めエラー:', error)
+    alert('ピン留めの変更に失敗しました: ' + error.message)
+  }
+}
+
+const toggleReplyForm = (commentId) => {
+  if (replyingTo.value === commentId) {
+    replyingTo.value = null
+    replyContent.value = ''
+  } else {
+    replyingTo.value = commentId
+    replyContent.value = ''
+  }
+}
+
+const cancelComment = () => {
+  newComment.value = ''
+  showCommentActions.value = false
+}
+
+const cancelReply = () => {
+  replyingTo.value = null
+  replyContent.value = ''
+}
+
+const canPinComment = (comment) => {
+  // 動画の投稿者かつトップレベルコメントの場合のみピン留め可能
+  return props.video.user_id === parseInt(authUser.value?.id) && !comment.parent_id
+}
+
+const autoResize = (event) => {
+  const textarea = event.target
+  textarea.style.height = 'auto'
+  textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`
+}
 
 const onVideoLoaded = () => {
   console.log('Video loaded successfully')
@@ -301,6 +751,11 @@ const formatTimeAgo = (publishedAt) => {
   const diffInYears = Math.floor(diffInMonths / 12)
   return `${diffInYears} 年前`
 }
+
+// コンポーネントマウント時にコメントを読み込み
+onMounted(() => {
+  loadComments()
+})
 </script>
 
 <style scoped>

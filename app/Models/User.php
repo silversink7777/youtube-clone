@@ -127,4 +127,12 @@ class User extends Authenticatable
     {
         return $this->videos()->where('status', 'published');
     }
+
+    /**
+     * Get comments posted by this user.
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

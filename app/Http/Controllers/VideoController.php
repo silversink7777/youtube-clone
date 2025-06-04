@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Repositories\Interfaces\VideoRepositoryInterface;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class VideoController extends Controller
 {
@@ -68,23 +69,37 @@ class VideoController extends Controller
      */
     public function show(int $id)
     {
+        $video = $this->videoRepository->findById($id);
+        
+        if (!$video) {
+            Log::warning("Video not found: {$id}");
+            abort(404, 'Video not found');
+        }
+
         try {
-            $video = $this->videoRepository->findById($id);
-
-            if (!$video) {
-                \Log::error("Video not found with ID: {$id}");
-                abort(404, "動画が見つかりません");
-            }
-
             $videoData = $this->videoRepository->transformToArray($video);
-            \Log::info("Video data loaded successfully", ['video_id' => $id, 'title' => $video->title]);
+            
+            // コメント数を追加
+            $videoData['comments_count'] = $video->comments()->count();
+            
+            Log::info("Video data retrieved successfully", [
+                'video_id' => $id,
+                'title' => $videoData['title'] ?? 'N/A',
+                'user_id' => $videoData['user_id'] ?? 'N/A',
+                'comments_count' => $videoData['comments_count']
+            ]);
 
             return Inertia::render('Watch/Show', [
-                'video' => $videoData,
+                'video' => $videoData
             ]);
         } catch (\Exception $e) {
-            \Log::error("Error loading video {$id}: " . $e->getMessage());
-            abort(500, "動画の読み込み中にエラーが発生しました");
+            Log::error("Error preparing video data for view", [
+                'video_id' => $id,
+                'error' => $e->getMessage(),
+                'stack' => $e->getTraceAsString()
+            ]);
+            
+            abort(500, 'Error loading video data');
         }
     }
 

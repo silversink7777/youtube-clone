@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 動画データのシード
-        $this->call(VideoSeeder::class);
+        $this->call([
+            VideoSeeder::class,
+            CommentSeeder::class,
+        ]);
     }
 }

@@ -114,4 +114,37 @@ class Video extends Model
         }
         return $query;
     }
+
+    /**
+     * コメントとの関連
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class)->with('user');
+    }
+
+    /**
+     * トップレベルコメント（返信ではないコメント）を取得
+     * 論理削除されたコメントも含む（管理画面用）
+     */
+    public function topLevelComments()
+    {
+        return $this->hasMany(Comment::class)->topLevel()->with(['user', 'replies'])->orderBy('is_pinned', 'desc')->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * 表示用のトップレベルコメント（削除されていないもののみ）
+     */
+    public function visibleTopLevelComments()
+    {
+        return $this->hasMany(Comment::class)->topLevel()->with(['user', 'visibleReplies'])->orderBy('is_pinned', 'desc')->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * コメント数を取得
+     */
+    public function getCommentsCountAttribute(): int
+    {
+        return $this->comments()->count();
+    }
 }
