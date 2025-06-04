@@ -4,14 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Video;
-use App\Models\CommentLike;
-use App\Models\CommentDislike;
+use App\Repositories\CommentRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class CommentController extends Controller
 {
+    protected CommentRepositoryInterface $commentRepository;
+
+    public function __construct(CommentRepositoryInterface $commentRepository)
+    {
+        $this->commentRepository = $commentRepository;
+    }
+
     /**
      * 動画のコメント一覧を取得
      */
@@ -23,17 +29,11 @@ class CommentController extends Controller
             $video = Video::findOrFail($videoId);
             \Log::info('Video取得成功', ['video_id' => $video->id, 'title' => $video->title]);
             
-            // 削除されたコメントも含めて取得（withTrashed()を使用）
-            $comments = $video->topLevelComments()
-                ->withTrashed()
-                ->with(['user', 'replies' => function($query) {
-                    $query->withTrashed()->with('user');
-                }])
-                ->paginate(20);
+            $comments = $this->commentRepository->getCommentsByVideo($video, 20);
             \Log::info('topLevelComments取得成功', ['comments_count' => $comments->total()]);
             
             $formattedComments = collect($comments->items())->map(function ($comment) {
-                return $this->formatComment($comment);
+                return $this->commentRepository->formatComment($comment);
             })->toArray();
             \Log::info('formatComment完了', ['formatted_count' => count($formattedComments)]);
 
@@ -92,15 +92,12 @@ class CommentController extends Controller
                 }
             }
 
-            $comment = Comment::create([
+            $comment = $this->commentRepository->createComment([
                 'video_id' => $video->id,
                 'user_id' => Auth::id(),
                 'content' => $request->content,
                 'parent_id' => $request->parent_id,
             ]);
-
-            // 作成されたコメントをリレーションと一緒に取得
-            $comment->load('user', 'replies.user');
 
             \Log::info('コメントが正常に投稿されました', [
                 'comment_id' => $comment->id,
@@ -109,7 +106,7 @@ class CommentController extends Controller
             ]);
 
             return response()->json([
-                'comment' => $this->formatComment($comment),
+                'comment' => $this->commentRepository->formatComment($comment),
                 'message' => 'コメントを投稿しました'
             ], 201, [], JSON_UNESCAPED_UNICODE);
 
@@ -137,9 +134,7 @@ class CommentController extends Controller
             return response()->json(['error' => 'ログインが必要です'], 401);
         }
 
-        $comment = Comment::where('video_id', $videoId)
-            ->where('id', $commentId)
-            ->firstOrFail();
+        $comment = $this->commentRepository->findCommentByVideoAndId($videoId, $commentId);
 
         // コメント投稿者か動画投稿者のみ削除可能
         $video = Video::findOrFail($videoId);
@@ -147,7 +142,7 @@ class CommentController extends Controller
             return response()->json(['error' => '削除権限がありません'], 403);
         }
 
-        $comment->delete();
+        $this->commentRepository->deleteComment($comment);
 
         return response()->json(['message' => 'コメントを削除しました']);
     }
@@ -173,11 +168,11 @@ class CommentController extends Controller
             ->whereNull('parent_id') // トップレベルコメントのみピン留め可能
             ->firstOrFail();
 
-        $comment->update(['is_pinned' => !$comment->is_pinned]);
+        $updatedComment = $this->commentRepository->togglePin($comment);
 
         return response()->json([
-            'comment' => $this->formatComment($comment->fresh('user')),
-            'message' => $comment->is_pinned ? 'コメントをピン留めしました' : 'ピン留めを解除しました'
+            'comment' => $this->commentRepository->formatComment($updatedComment),
+            'message' => $updatedComment->is_pinned ? 'コメントをピン留めしました' : 'ピン留めを解除しました'
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
@@ -191,47 +186,10 @@ class CommentController extends Controller
         }
 
         try {
-            $comment = Comment::where('video_id', $videoId)
-                ->where('id', $commentId)
-                ->firstOrFail();
+            $comment = $this->commentRepository->findCommentByVideoAndId($videoId, $commentId);
+            $result = $this->commentRepository->toggleLike($comment, Auth::id());
 
-            $userId = Auth::id();
-            $existingLike = CommentLike::where('comment_id', $commentId)
-                ->where('user_id', $userId)
-                ->first();
-
-            if ($existingLike) {
-                // いいね解除
-                $existingLike->delete();
-                $action = 'unliked';
-                $message = 'いいねを解除しました';
-            } else {
-                // いいねする前に、既存のきらいを削除
-                CommentDislike::where('comment_id', $commentId)
-                    ->where('user_id', $userId)
-                    ->delete();
-
-                // いいね追加
-                CommentLike::create([
-                    'comment_id' => $commentId,
-                    'user_id' => $userId
-                ]);
-                $action = 'liked';
-                $message = 'いいねしました';
-            }
-
-            // 最新のいいね数ときらい数を取得
-            $likesCount = CommentLike::where('comment_id', $commentId)->count();
-            $dislikesCount = CommentDislike::where('comment_id', $commentId)->count();
-
-            return response()->json([
-                'action' => $action,
-                'message' => $message,
-                'likes_count' => $likesCount,
-                'dislikes_count' => $dislikesCount,
-                'is_liked' => $action === 'liked',
-                'is_disliked' => false
-            ], 200, [], JSON_UNESCAPED_UNICODE);
+            return response()->json($result, 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (\Exception $e) {
             \Log::error('いいね機能エラー', [
@@ -258,47 +216,10 @@ class CommentController extends Controller
         }
 
         try {
-            $comment = Comment::where('video_id', $videoId)
-                ->where('id', $commentId)
-                ->firstOrFail();
+            $comment = $this->commentRepository->findCommentByVideoAndId($videoId, $commentId);
+            $result = $this->commentRepository->toggleDislike($comment, Auth::id());
 
-            $userId = Auth::id();
-            $existingDislike = CommentDislike::where('comment_id', $commentId)
-                ->where('user_id', $userId)
-                ->first();
-
-            if ($existingDislike) {
-                // きらい解除
-                $existingDislike->delete();
-                $action = 'undisliked';
-                $message = 'きらいを解除しました';
-            } else {
-                // きらいする前に、既存のいいねを削除
-                CommentLike::where('comment_id', $commentId)
-                    ->where('user_id', $userId)
-                    ->delete();
-
-                // きらい追加
-                CommentDislike::create([
-                    'comment_id' => $commentId,
-                    'user_id' => $userId
-                ]);
-                $action = 'disliked';
-                $message = 'きらいしました';
-            }
-
-            // 最新のいいね数ときらい数を取得
-            $likesCount = CommentLike::where('comment_id', $commentId)->count();
-            $dislikesCount = CommentDislike::where('comment_id', $commentId)->count();
-
-            return response()->json([
-                'action' => $action,
-                'message' => $message,
-                'likes_count' => $likesCount,
-                'dislikes_count' => $dislikesCount,
-                'is_liked' => false,
-                'is_disliked' => $action === 'disliked'
-            ], 200, [], JSON_UNESCAPED_UNICODE);
+            return response()->json($result, 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (\Exception $e) {
             \Log::error('きらい機能エラー', [
@@ -313,75 +234,5 @@ class CommentController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * コメントデータをフォーマット
-     */
-    private function formatComment(Comment $comment): array
-    {
-        // 削除されたコメントの場合
-        if ($comment->trashed()) {
-            return [
-                'id' => $comment->id,
-                'content' => 'このコメントは削除されました',
-                'likes_count' => 0,
-                'dislikes_count' => 0,
-                'is_pinned' => false,
-                'is_deleted' => true,
-                'is_liked' => false,
-                'is_disliked' => false,
-                'time_ago' => $comment->time_ago,
-                'created_at' => $comment->created_at->toISOString(),
-                'user' => [
-                    'id' => null,
-                    'name' => '削除されたユーザー',
-                    'channel_name' => '削除されたユーザー',
-                    'channel_initial' => '削',
-                ],
-                'replies' => $comment->replies->map(function ($reply) {
-                    return $this->formatComment($reply);
-                })->toArray(),
-                'parent_id' => $comment->parent_id,
-                'can_delete' => false,
-            ];
-        }
-
-        // いいね数の取得
-        $likesCount = CommentLike::where('comment_id', $comment->id)->count();
-        $isLiked = Auth::check() ? CommentLike::where('comment_id', $comment->id)
-            ->where('user_id', Auth::id())
-            ->exists() : false;
-
-        // きらい数の取得
-        $dislikesCount = CommentDislike::where('comment_id', $comment->id)->count();
-        $isDisliked = Auth::check() ? CommentDislike::where('comment_id', $comment->id)
-            ->where('user_id', Auth::id())
-            ->exists() : false;
-
-        // 通常のコメント
-        return [
-            'id' => $comment->id,
-            'content' => $comment->content,
-            'likes_count' => $likesCount,
-            'dislikes_count' => $dislikesCount,
-            'is_pinned' => $comment->is_pinned,
-            'is_deleted' => false,
-            'is_liked' => $isLiked,
-            'is_disliked' => $isDisliked,
-            'time_ago' => $comment->time_ago,
-            'created_at' => $comment->created_at->toISOString(),
-            'user' => [
-                'id' => $comment->user->id,
-                'name' => $comment->user->name,
-                'channel_name' => $comment->user->channel_name ?? $comment->user->name,
-                'channel_initial' => $comment->user->channel_initial,
-            ],
-            'replies' => $comment->replies->map(function ($reply) {
-                return $this->formatComment($reply);
-            })->toArray(),
-            'parent_id' => $comment->parent_id,
-            'can_delete' => Auth::check() && (Auth::id() === $comment->user_id || Auth::user()->videos()->where('id', $comment->video_id)->exists()),
-        ];
     }
 }
