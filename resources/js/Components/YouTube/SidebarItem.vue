@@ -2,14 +2,14 @@
   <a 
     href="#" 
     :class="[
-      'flex items-center px-3 py-2 rounded-lg transition-colors duration-200 group',
+      'flex items-center rounded-lg transition-colors duration-200 group',
       active ? 'bg-gray-100 font-medium' : 'hover:bg-gray-100',
-      collapsed ? 'justify-center' : 'space-x-3'
+      collapsed ? 'justify-center px-2 py-4' : 'space-x-4 px-6 py-3'
     ]"
     :title="collapsed ? label : null"
   >
     <div class="flex-shrink-0">
-      <component :is="iconComponent" class="w-5 h-5" />
+      <component :is="iconComponent" :class="collapsed ? 'w-6 h-6' : 'w-5 h-5'" />
     </div>
     <span 
       v-if="!collapsed" 

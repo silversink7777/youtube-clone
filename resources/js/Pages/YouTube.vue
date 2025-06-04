@@ -7,11 +7,25 @@
     />
 
     <div class="flex">
+      <!-- Overlay for mobile -->
+      <div 
+        v-if="!sidebarCollapsed" 
+        class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+        @click="sidebarCollapsed = true"
+      ></div>
+      
       <!-- Sidebar -->
       <AppSidebar :isCollapsed="sidebarCollapsed" />
 
       <!-- Main Content -->
-      <main :class="['flex-1 transition-all duration-300', sidebarCollapsed ? 'ml-16' : 'ml-64']">
+      <main 
+        :class="['flex-1 transition-all duration-300', sidebarCollapsed ? 'ml-20' : 'ml-80']"
+        :style="{ marginLeft: sidebarCollapsed ? '80px' : '320px' }"
+      >
+        <!-- Debug info -->
+        <div v-if="false" class="p-2 bg-blue-100 text-xs">
+          Sidebar collapsed: {{ sidebarCollapsed }}
+        </div>
         <div class="p-6">
           <!-- Welcome message for authenticated users -->
           <div v-if="$page.props.auth.user" class="mb-6">
