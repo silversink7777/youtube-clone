@@ -25,7 +25,19 @@ Route::middleware([
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
+    
+    // 動画アップロード関連ルート
+    Route::get('/upload', [VideoController::class, 'create'])->name('video.create');
+    Route::post('/upload', [VideoController::class, 'store'])->name('video.store');
+    Route::get('/manage-videos', [VideoController::class, 'manage'])->name('video.manage');
+    Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('video.edit');
+    Route::put('/videos/{video}', [VideoController::class, 'update'])->name('video.update');
+    Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('video.destroy');
+    Route::get('/upload/progress', [VideoController::class, 'getUploadProgress'])->name('video.progress');
 });
+
+// Video proxy route for external URLs (to fix CORS issues)
+Route::get('/video-proxy', [VideoController::class, 'proxy'])->name('video.proxy');
 
 // API routes for videos
 Route::prefix('api')->group(function () {

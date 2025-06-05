@@ -59,6 +59,14 @@ class VideoRepository implements VideoRepositoryInterface
     }
 
     /**
+     * 動画詳細情報を取得
+     */
+    public function getVideoWithDetails(int $id): ?Video
+    {
+        return $this->model->with('user')->find($id);
+    }
+
+    /**
      * ユーザーの動画を取得
      */
     public function getUserVideos(int $userId): Collection
@@ -95,6 +103,54 @@ class VideoRepository implements VideoRepositoryInterface
     }
 
     /**
+     * 外部URLかどうかを判定
+     */
+    private function isExternalUrl(?string $url): bool
+    {
+        if (!$url) {
+            return false;
+        }
+
+        return str_starts_with($url, 'http://') || str_starts_with($url, 'https://');
+    }
+
+    /**
+     * 動画URLを適切に処理
+     */
+    private function getVideoUrl(?string $videoUrl): ?string
+    {
+        if (!$videoUrl) {
+            return null;
+        }
+
+        // 外部URLの場合はそのまま返す
+        if ($this->isExternalUrl($videoUrl)) {
+            return $videoUrl;
+        }
+
+        // ローカルファイルの場合はストレージパスを追加
+        return asset('storage/' . $videoUrl);
+    }
+
+    /**
+     * サムネイルURLを適切に処理
+     */
+    private function getThumbnailUrl(?string $thumbnailPath): ?string
+    {
+        if (!$thumbnailPath) {
+            return null;
+        }
+
+        // 外部URLの場合はそのまま返す
+        if ($this->isExternalUrl($thumbnailPath)) {
+            return $thumbnailPath;
+        }
+
+        // ローカルファイルの場合はストレージパスを追加
+        return asset('storage/' . $thumbnailPath);
+    }
+
+    /**
      * 動画データを配列形式に変換
      */
     public function transformToArray(Video $video): array
@@ -113,14 +169,14 @@ class VideoRepository implements VideoRepositoryInterface
             'id' => $video->id,
             'title' => $video->title,
             'description' => $video->description,
-            'thumbnail' => $video->thumbnail,
-            'video_url' => $video->video_url,
+            'thumbnail' => $this->getThumbnailUrl($video->thumbnail),
+            'video_url' => $this->getVideoUrl($video->video_url),
             'duration' => $video->duration,
             'channelName' => $channelName,
             'channelInitial' => $channelInitial,
             'channelColor' => $channelColor,
             'views' => $video->views,
-            'publishedAt' => $video->published_at->toISOString(),
+            'publishedAt' => $video->published_at ? $video->published_at->toISOString() : now()->toISOString(),
             'category' => $video->category,
         ];
     }

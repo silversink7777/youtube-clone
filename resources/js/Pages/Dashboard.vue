@@ -265,8 +265,8 @@ const formatDate = (dateString) => {
               </svg>
               <h3 class="mt-2 text-sm font-medium text-gray-900">動画がありません</h3>
               <p class="mt-1 text-sm text-gray-500">最初の動画をアップロードしてチャンネルを開始しましょう。</p>
+                </div>
             </div>
-          </div>
         </div>
       </main>
     </div>

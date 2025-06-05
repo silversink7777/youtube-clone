@@ -9,22 +9,24 @@
       <div class="w-full h-44 bg-gray-900 flex items-center justify-center">
         <video 
           ref="videoRef"
-          :src="video.video_url"
+          :src="getVideoUrl"
           class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           muted
           loop
-          preload="metadata"
+          :preload="isExternalUrl ? 'metadata' : 'auto'"
+          :crossorigin="isExternalUrl ? 'anonymous' : null"
           :poster="video.thumbnail"
           @loadeddata="handleVideoLoaded"
           @error="handleVideoError"
           @canplay="handleCanPlay"
+          @loadstart="handleLoadStart"
         >
           お使いのブラウザは動画の再生をサポートしていません。
         </video>
         
         <!-- ローディング状態 -->
         <div 
-          v-if="!videoLoaded && !videoError" 
+          v-if="isLoading && !videoError" 
           class="absolute inset-0 bg-gray-900 flex items-center justify-center"
         >
           <svg class="w-8 h-8 text-white animate-spin" fill="none" viewBox="0 0 24 24">
@@ -41,7 +43,7 @@
           <svg class="w-12 h-12 mb-2" fill="currentColor" viewBox="0 0 24 24">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
           </svg>
-          <span class="text-xs">動画を読み込めません</span>
+          <span class="text-xs">{{ errorMessage }}</span>
         </div>
 
         <!-- フォールバック画像 -->
@@ -147,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -163,10 +165,34 @@ const videoError = ref(false)
 const isHovering = ref(false)
 const isPlaying = ref(false)
 const canPlay = ref(false)
+const isLoading = ref(true)
 const videoRef = ref(null)
+const errorMessage = ref('動画を読み込めません')
+const useDirectUrl = ref(false) // プロキシが失敗した場合の直接URL使用フラグ
+
+// 外部URLかどうかを判定
+const isExternalUrl = computed(() => {
+  return props.video.video_url && (
+    props.video.video_url.startsWith('http://') || 
+    props.video.video_url.startsWith('https://')
+  )
+})
+
+// 動画のURLを取得（外部URLの場合はプロキシ経由、失敗時は直接URL）
+const getVideoUrl = computed(() => {
+  if (isExternalUrl.value && !useDirectUrl.value) {
+    return `/video-proxy?url=${encodeURIComponent(props.video.video_url)}`
+  }
+  return props.video.video_url
+})
 
 // ホバー時の遅延タイマー
 let hoverTimer = null
+
+const handleLoadStart = () => {
+  isLoading.value = true
+  videoError.value = false
+}
 
 const handleMouseEnter = async () => {
   isHovering.value = true
@@ -205,16 +231,65 @@ const handleMouseLeave = () => {
 const handleVideoLoaded = () => {
   videoLoaded.value = true
   videoError.value = false
+  isLoading.value = false
 }
 
-const handleVideoError = () => {
+const handleVideoError = async (event) => {
+  console.error('動画読み込みエラー:', event)
+  console.log('動画URL:', getVideoUrl.value)
+  console.log('外部URL:', isExternalUrl.value)
+  console.log('動画データ:', props.video)
+  
+  // 外部URLでプロキシを使用していて、まだ直接URLを試していない場合
+  if (isExternalUrl.value && !useDirectUrl.value) {
+    console.log('プロキシでの読み込みに失敗。直接URLを試行します...')
+    useDirectUrl.value = true
+    
+    // 少し待ってから動画要素のsrcを更新
+    await nextTick()
+    if (videoRef.value) {
+      videoRef.value.load() // 動画を再読み込み
+    }
+    return
+  }
+  
+  // エラー処理
   videoError.value = true
   videoLoaded.value = false
   canPlay.value = false
+  isLoading.value = false
+  
+  // エラーの詳細を取得
+  if (event && event.target && event.target.error) {
+    const error = event.target.error
+    console.error('動画読み込みエラー詳細:', error)
+    console.error('エラーコード:', error.code)
+    console.error('エラーメッセージ:', error.message)
+    
+    switch (error.code) {
+      case error.MEDIA_ERR_ABORTED:
+        errorMessage.value = '動画の読み込みが中断されました'
+        break
+      case error.MEDIA_ERR_NETWORK:
+        errorMessage.value = 'ネットワークエラー'
+        break
+      case error.MEDIA_ERR_DECODE:
+        errorMessage.value = '動画形式がサポートされていません'
+        break
+      case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+        errorMessage.value = isExternalUrl.value ? '外部動画にアクセスできません' : 'ローカル動画にアクセスできません'
+        break
+      default:
+        errorMessage.value = '動画を読み込めません'
+    }
+  } else {
+    errorMessage.value = isExternalUrl.value ? '外部動画にアクセスできません' : 'ローカル動画にアクセスできません'
+  }
 }
 
 const handleCanPlay = () => {
   canPlay.value = true
+  isLoading.value = false
 }
 
 const formatViews = (views) => {

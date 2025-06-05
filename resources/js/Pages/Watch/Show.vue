@@ -23,18 +23,48 @@
           <!-- Primary Column (Video + Info) -->
           <div class="flex-1 max-w-[1280px]">
             <!-- Video Player -->
-            <div class="bg-black rounded-lg overflow-hidden mb-4" style="aspect-ratio: 16/9;">
+            <div class="bg-black rounded-lg overflow-hidden mb-4 relative" style="aspect-ratio: 16/9;">
               <video 
                 ref="videoPlayer"
-                :src="video.video_url"
+                :src="getVideoUrl"
                 class="w-full h-full"
                 controls
                 autoplay
+                crossorigin="anonymous"
                 @loadedmetadata="onVideoLoaded"
                 @error="onVideoError"
+                @loadstart="onVideoLoadStart"
               >
                 お使いのブラウザは動画の再生をサポートしていません。
               </video>
+              
+              <!-- ローディング状態 -->
+              <div 
+                v-if="isVideoLoading && !videoError" 
+                class="absolute inset-0 bg-black flex items-center justify-center"
+              >
+                <svg class="w-12 h-12 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              
+              <!-- エラー状態 -->
+              <div 
+                v-if="videoError" 
+                class="absolute inset-0 bg-gray-800 flex flex-col items-center justify-center text-white"
+              >
+                <svg class="w-16 h-16 mb-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                </svg>
+                <span class="text-lg">{{ videoErrorMessage }}</span>
+                <button 
+                  @click="retryVideo"
+                  class="mt-4 px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
+                >
+                  再試行
+                </button>
+              </div>
             </div>
 
             <!-- Video Title -->
@@ -455,12 +485,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { router, usePage } from '@inertiajs/vue3'
-import { Link } from '@inertiajs/vue3'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { Link, usePage, router } from '@inertiajs/vue3'
 import AppHeader from '../../Components/YouTube/AppHeader.vue'
 import AppSidebar from '../../Components/YouTube/AppSidebar.vue'
 
+// Props from backend
 const props = defineProps({
   video: {
     type: Object,
@@ -472,6 +502,28 @@ const page = usePage()
 const sidebarCollapsed = ref(true) // Always collapsed on video page
 const videoPlayer = ref(null)
 const showFullDescription = ref(false)
+
+// 動画プレイヤー関連のリアクティブデータ
+const isVideoLoading = ref(true)
+const videoError = ref(false)
+const videoErrorMessage = ref('動画を読み込めません')
+const useDirectUrl = ref(false) // プロキシが失敗した場合の直接URL使用フラグ
+
+// 外部URLかどうかを判定
+const isExternalUrl = computed(() => {
+  return props.video.video_url && (
+    props.video.video_url.startsWith('http://') || 
+    props.video.video_url.startsWith('https://')
+  )
+})
+
+// 動画のURLを取得（外部URLの場合はプロキシ経由、失敗時は直接URL）
+const getVideoUrl = computed(() => {
+  if (isExternalUrl.value && !useDirectUrl.value) {
+    return `/video-proxy?url=${encodeURIComponent(props.video.video_url)}`
+  }
+  return props.video.video_url
+})
 
 // コメント関連のリアクティブデータ
 const comments = ref([])
@@ -740,12 +792,71 @@ const autoResize = (event) => {
   textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`
 }
 
-const onVideoLoaded = () => {
-  console.log('Video loaded successfully')
+const onVideoLoadStart = () => {
+  isVideoLoading.value = true
+  videoError.value = false
 }
 
-const onVideoError = (event) => {
-  console.error('Video loading error:', event)
+const onVideoLoaded = () => {
+  console.log('Video loaded successfully')
+  isVideoLoading.value = false
+  videoError.value = false
+}
+
+const onVideoError = async (event) => {
+  console.error('動画読み込みエラー:', event)
+  
+  // 外部URLでプロキシを使用していて、まだ直接URLを試していない場合
+  if (isExternalUrl.value && !useDirectUrl.value) {
+    console.log('プロキシでの読み込みに失敗。直接URLを試行します...')
+    useDirectUrl.value = true
+    
+    // 少し待ってから動画要素のsrcを更新
+    await nextTick()
+    if (videoPlayer.value) {
+      videoPlayer.value.load() // 動画を再読み込み
+    }
+    return
+  }
+  
+  // エラー処理
+  videoError.value = true
+  isVideoLoading.value = false
+  
+  // エラーの詳細を取得
+  if (event && event.target && event.target.error) {
+    const error = event.target.error
+    console.error('動画読み込みエラー詳細:', error)
+    
+    switch (error.code) {
+      case error.MEDIA_ERR_ABORTED:
+        videoErrorMessage.value = '動画の読み込みが中断されました'
+        break
+      case error.MEDIA_ERR_NETWORK:
+        videoErrorMessage.value = 'ネットワークエラーが発生しました'
+        break
+      case error.MEDIA_ERR_DECODE:
+        videoErrorMessage.value = '動画形式がサポートされていません'
+        break
+      case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+        videoErrorMessage.value = isExternalUrl.value ? '外部動画にアクセスできません' : '動画形式がサポートされていません'
+        break
+      default:
+        videoErrorMessage.value = '動画を読み込めません'
+    }
+  } else {
+    videoErrorMessage.value = isExternalUrl.value ? '外部動画にアクセスできません' : '動画を読み込めません'
+  }
+}
+
+const retryVideo = () => {
+  videoError.value = false
+  isVideoLoading.value = true
+  useDirectUrl.value = false // プロキシから再試行
+  
+  if (videoPlayer.value) {
+    videoPlayer.value.load()
+  }
 }
 
 const formatViews = (views) => {
@@ -904,6 +1015,16 @@ onMounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 /* Custom scrollbar for webkit browsers */
