@@ -1,7 +1,7 @@
 <template>
   <a 
     href="#" 
-    class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 group"
+    class="flex items-center space-x-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 group"
   >
     <div :class="['w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium', color]">
       {{ avatar }}

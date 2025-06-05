@@ -20,6 +20,8 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'channel_name' => ['nullable', 'string', 'max:255'],
+            'channel_description' => ['nullable', 'string', 'max:1000'],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
         ])->validateWithBag('updateProfileInformation');
 
@@ -34,6 +36,8 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             $user->forceFill([
                 'name' => $input['name'],
                 'email' => $input['email'],
+                'channel_name' => $input['channel_name'] ?? null,
+                'channel_description' => $input['channel_description'] ?? null,
             ])->save();
         }
     }
@@ -49,6 +53,8 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'name' => $input['name'],
             'email' => $input['email'],
             'email_verified_at' => null,
+            'channel_name' => $input['channel_name'] ?? null,
+            'channel_description' => $input['channel_description'] ?? null,
         ])->save();
 
         $user->sendEmailVerificationNotification();

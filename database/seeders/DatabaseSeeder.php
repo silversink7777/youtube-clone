@@ -19,5 +19,11 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // 動画データのシード
+        $this->call([
+            VideoSeeder::class,
+            CommentSeeder::class,
+        ]);
     }
 }

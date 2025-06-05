@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\Interfaces\VideoRepositoryInterface;
+use App\Repositories\VideoRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +13,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // VideoRepositoryの依存性注入設定
+        $this->app->bind(VideoRepositoryInterface::class, VideoRepository::class);
     }
 
     /**
