@@ -84,7 +84,7 @@ class Video extends Model
      */
     public function scopePublished($query)
     {
-        return $query->where('status', 'published');
+        return $query->where('status', 'published')->whereNotNull('published_at');
     }
 
     /**

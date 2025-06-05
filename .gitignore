@@ -18,9 +18,23 @@
 # /public/storage
 /storage/*.key
 /storage/pail
+/storage/app/public/videos
+/storage/app/public/thumbnails
 /vendor
 Homestead.json
 Homestead.yaml
 npm-debug.log
 Thumbs.db
 yarn-error.log
+/public/storage/thumbnails/4c437c66-43bc-4901-b28c-221d8e74699d.jpg
+/public/storage/thumbnails/7008aee0-659e-4c75-973d-33709984fd46.jpg
+/public/storage/thumbnails/9a4267cd-e02d-4dc8-947a-d99942a09d58.jpg
+/public/storage/videos/183dc933-2f44-48b2-ba46-a5bc55ffc5f9.mp4
+/public/storage/videos/230962b2-1df2-4b08-859a-1dbdd7dc804f.mp4
+/public/storage/videos/2d1c2198-0bd7-4148-ad98-96ff2df869e1.mp4
+/public/storage/videos/4b0c16eb-7922-4c10-868d-db919a2bad06.mp4
+/public/storage/videos/8a541829-0995-43f8-b98f-42f7e2400bc7.mp4
+/public/storage/videos/ab2809fb-78e5-45b3-9734-fdc9f8d19758.mp4
+/public/storage/videos/b5ce75e5-86ca-4072-b6e5-8eefeca2ad3e.mp4
+/public/storage/videos/eaddb37e-80ab-48b7-b130-30de2c2f2e01.mp4
+/public/hot

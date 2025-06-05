@@ -71,11 +71,15 @@
         
         <!-- Create button (only for authenticated users) -->
         <div v-if="$page.props.auth.user" class="flex items-center space-x-1">
-          <button class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <Link 
+            :href="route('video.create')"
+            class="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            title="動画をアップロード"
+          >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-          </button>
+          </Link>
           <span class="text-sm hidden lg:block">作成</span>
         </div>
         
@@ -137,6 +141,16 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                 </svg>
                 ダッシュボード
+              </Link>
+              
+              <Link 
+                :href="route('video.manage')" 
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                動画管理
               </Link>
               
               <div class="border-t border-gray-200 my-1"></div>

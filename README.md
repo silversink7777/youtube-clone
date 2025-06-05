@@ -1,61 +1,230 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# YouTube Clone
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel、Inertia.js、Vue.jsを使用したYouTubeクローンアプリケーション
 
-## About Laravel
+## 📋 概要
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+このプロジェクトは、YouTubeの基本機能を再現したWebアプリケーションです。動画のアップロード、視聴、管理機能を提供します。
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 技術スタック
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **バックエンド**: Laravel 12 Jetstream
+- **フロントエンド**: Vue.js 3 + Inertia.js
+- **データベース**: MySQL
+- **スタイリング**: Tailwind CSS
+- **ファイルストレージ**: Laravel Storage
+- **認証**: Laravel Jetstream
 
-## Learning Laravel
+## ✨ 主な機能
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 動画機能
+- 📁 動画アップロード（MP4形式）
+- 🎬 動画一覧表示
+- ▶️ 動画詳細ページでの再生
+- 🖼️ サムネイル自動生成
+- 🔍 動画検索機能
+- 📂 カテゴリ別動画表示
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 外部動画対応
+- 🌐 外部URL動画の再生サポート
+- 🔄 CORS対応のプロキシサーバー
+- 🛡️ セキュリティを考慮した許可ドメイン制限
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### ユーザー機能
+- 👤 ユーザー登録・ログイン
+- 📊 動画管理ダッシュボード
+- ✏️ 動画情報の編集
+- 🗑️ 動画削除
 
-## Laravel Sponsors
+### UI/UX
+- 📱 レスポンシブデザイン
+- 🎯 YouTubeライクなインターフェース
+- ⚡ ホバー時の動画プレビュー
+- 💫 ローディングアニメーション
+- 🚫 エラーハンドリングとフォールバック表示
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 📦 インストール
 
-### Premium Partners
+### 必要な環境
+- PHP 8.1以上
+- Composer
+- Node.js 16以上
+- MySQL 8.0以上
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### セットアップ手順
 
-## Contributing
+1. **リポジトリのクローン**
+```bash
+git clone https://github.com/silversink7777/youtube-clone
+cd youtube-clone
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+2. **依存関係のインストール**
+```bash
+composer install
+npm install
+```
 
-## Code of Conduct
+3. **環境設定**
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. **データベース設定**
+`.env`ファイルを編集してデータベース接続情報を設定：
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=youtube_clone
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-## Security Vulnerabilities
+5. **アプリケーションURL設定**
+```env
+APP_URL=http://127.0.0.1:8000
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+6. **データベースマイグレーション**
+```bash
+php artisan migrate
+```
 
-## License
+7. **ストレージリンクの作成**
+```bash
+php artisan storage:link
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+8. **アセットのビルド**
+```bash
+npm run dev
+```
+
+9. **開発サーバーの起動**
+```bash
+php artisan serve
+```
+
+アプリケーションは `http://127.0.0.1:8000` でアクセスできます。
+
+## 🎯 使用方法
+
+### 動画のアップロード
+1. アカウントを作成してログイン
+2. 「動画をアップロード」ボタンをクリック
+3. MP4ファイルを選択してアップロード
+4. タイトル、説明、カテゴリを設定
+5. 「公開」をクリックして動画を公開
+
+### 外部動画の追加
+1. 管理画面で「外部動画を追加」を選択
+2. 動画のURL（HTTP/HTTPS）を入力
+3. メタデータを設定して保存
+
+### 動画の視聴
+- ホームページで動画一覧を閲覧
+- 動画カードをクリックして詳細ページに移動
+- ホバー時の自動プレビューでクイック視聴
+
+## 🛠️ トラブルシューティング
+
+### 動画が表示されない場合
+
+**ローカル動画の問題**
+```bash
+# ストレージリンクの再作成
+php artisan storage:link
+
+# 設定キャッシュのクリア
+php artisan config:clear
+php artisan cache:clear
+```
+
+**外部動画の問題**
+- 許可ドメインリストの確認
+- CORS設定の確認
+- プロキシ機能のログ確認
+
+### 開発時の注意点
+
+**APP_URLの設定**
+開発サーバーのURLと一致するように設定してください：
+```env
+APP_URL=http://127.0.0.1:8000
+```
+
+**ファイルアップロード**
+`storage/app/public`ディレクトリの権限を確認：
+```bash
+chmod -R 755 storage/app/public
+```
+
+## 📁 プロジェクト構造
+
+```
+youtube-clone/
+├── app/
+│   ├── Http/Controllers/
+│   │   └── VideoController.php      # 動画関連の制御
+│   │   └── VideoController.php      # 動画関連の制御
+│   ├── Models/
+│   │   └── Video.php               # 動画モデル
+│   ├── Repositories/
+│   │   └── VideoRepository.php     # データアクセス層
+│   └── Services/
+│       └── VideoUploadService.php  # 動画アップロード処理
+├── resources/
+│   └── js/
+│       ├── Components/
+│       │   └── YouTube/
+│       │       ├── VideoCard.vue   # 動画カードコンポーネント
+│       │       └── ...
+│       └── Pages/
+│           ├── YouTube.vue         # ホームページ
+│           └── Watch/
+│               └── Show.vue        # 動画詳細ページ
+└── storage/
+    └── app/
+        └── public/
+            ├── videos/             # アップロード動画
+            └── thumbnails/         # サムネイル画像
+```
+
+## 🔧 開発用コマンド
+
+```bash
+# 開発サーバー起動
+php artisan serve
+
+# アセット監視
+npm run dev
+
+# プロダクションビルド
+npm run build
+
+# テスト実行
+php artisan test
+
+# コードフォーマット
+./vendor/bin/pint
+```
+
+## 🐛 既知の問題
+
+- 大容量動画ファイルのアップロード時間制限
+- 一部ブラウザでの自動再生制限
+- モバイルデバイスでの動画プレビュー性能
+
+## 📄 ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
+
+## 🤝 コントリビューション
+
+プルリクエストやイシューの報告を歓迎します。開発に参加する際は、コーディング規約に従ってください。
+
+## 📞 サポート
+
+問題やバグを発見した場合は、GitHubのIssuesページで報告してください。
