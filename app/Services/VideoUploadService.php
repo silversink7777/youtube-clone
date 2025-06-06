@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 use Illuminate\Support\Str;
 use App\Models\Video;
 use App\Models\User;
@@ -18,7 +19,28 @@ class VideoUploadService
 
     public function __construct()
     {
-        $this->imageManager = new ImageManager(new Driver());
+        $this->imageManager = $this->createImageManager();
+    }
+
+    /**
+     * 利用可能な画像ドライバーでImageManagerを作成
+     */
+    private function createImageManager(): ?ImageManager
+    {
+        try {
+            // Vercel環境などでGDが利用できない場合の対応
+            if (extension_loaded('imagick')) {
+                return new ImageManager(new ImagickDriver());
+            } elseif (extension_loaded('gd')) {
+                return new ImageManager(new Driver());
+            } else {
+                Log::warning('Neither GD nor Imagick extension is available');
+                return null;
+            }
+        } catch (Exception $e) {
+            Log::error('Failed to create ImageManager', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     /**
@@ -88,6 +110,13 @@ class VideoUploadService
     {
         $fileName = Str::uuid() . '.jpg';
         
+        // ImageManagerが利用できない場合は、オリジナルファイルをそのまま保存
+        if (!$this->imageManager) {
+            Log::info('ImageManager not available, storing original file');
+            $path = $file->storeAs('thumbnails', $fileName, 'public');
+            return $path;
+        }
+        
         try {
             // 画像をリサイズして保存
             $image = $this->imageManager->read($file->getRealPath())
@@ -115,6 +144,12 @@ class VideoUploadService
      */
     private function generateDefaultThumbnail(): string
     {
+        // ImageManagerが利用できない場合は、プレースホルダー画像のパスを返す
+        if (!$this->imageManager) {
+            Log::info('ImageManager not available, using placeholder thumbnail');
+            return $this->createPlaceholderThumbnail();
+        }
+        
         try {
             // デフォルトのサムネイル画像を作成
             $image = $this->imageManager->create(1280, 720)->fill('#2d3748');
@@ -131,15 +166,24 @@ class VideoUploadService
                 'error' => $e->getMessage()
             ]);
             
-            // フォールバック: 簡単な色付き画像のみ作成
-            $image = $this->imageManager->create(1280, 720)->fill('#2d3748');
-            $fileName = Str::uuid() . '.jpg';
-            $path = 'thumbnails/' . $fileName;
-            $encodedImage = $image->toJpeg(85);
-            Storage::disk('public')->put($path, $encodedImage);
-            
-            return $path;
+            // フォールバック: プレースホルダー画像を使用
+            return $this->createPlaceholderThumbnail();
         }
+    }
+
+    /**
+     * プレースホルダーサムネイルを作成（画像処理なし）
+     */
+    private function createPlaceholderThumbnail(): string
+    {
+        $fileName = 'placeholder_' . Str::uuid() . '.txt';
+        $path = 'thumbnails/' . $fileName;
+        
+        // テキストファイルとしてプレースホルダー情報を保存
+        $placeholderContent = 'Placeholder thumbnail - Video processing required';
+        Storage::disk('public')->put($path, $placeholderContent);
+        
+        return $path;
     }
 
     /**
