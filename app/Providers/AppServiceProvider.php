@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Repositories\Interfaces\VideoRepositoryInterface;
 use App\Repositories\VideoRepository;
+use Illuminate\Support\Facades\File;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
             } catch (\Exception $e) {
                 \Log::error('Database table check failed: ' . $e->getMessage());
             }
+        }
+
+        // Vercel環境でのViteマニフェスト自動生成
+        if (app()->environment('production')) {
+            $this->ensureViteManifest();
         }
     }
 
@@ -57,6 +63,73 @@ class AppServiceProvider extends ServiceProvider
             }
         } catch (\Exception $e) {
             \Log::error('Database table check error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Vercel環境でViteマニフェストの存在を確認し、必要に応じて生成する
+     */
+    private function ensureViteManifest(): void
+    {
+        $manifestPath = public_path('build/manifest.json');
+        $buildDir = public_path('build');
+        $assetsDir = public_path('build/assets');
+
+        // ビルドディレクトリが存在しない場合は何もしない
+        if (!is_dir($buildDir)) {
+            \Log::warning('Build directory does not exist');
+            return;
+        }
+
+        // マニフェストファイルが既に存在する場合は何もしない
+        if (file_exists($manifestPath)) {
+            return;
+        }
+
+        // アセットディレクトリが存在する場合、動的にマニフェストを生成
+        if (is_dir($assetsDir)) {
+            try {
+                $this->generateViteManifest($manifestPath, $assetsDir);
+                \Log::info('Vite manifest generated successfully');
+            } catch (\Exception $e) {
+                \Log::error('Failed to generate Vite manifest: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Viteマニフェストファイルを動的に生成する
+     */
+    private function generateViteManifest(string $manifestPath, string $assetsDir): void
+    {
+        $files = File::files($assetsDir);
+        $manifest = [];
+
+        foreach ($files as $file) {
+            $filename = $file->getFilename();
+            $relativePath = 'assets/' . $filename;
+
+            // アプリケーションのメインファイルを特定
+            if (str_contains($filename, 'app-') && str_ends_with($filename, '.js')) {
+                $manifest['resources/js/app.js'] = [
+                    'file' => $relativePath,
+                    'src' => 'resources/js/app.js',
+                    'isEntry' => true
+                ];
+            }
+
+            if (str_contains($filename, 'app-') && str_ends_with($filename, '.css')) {
+                $manifest['resources/css/app.css'] = [
+                    'file' => $relativePath,
+                    'src' => 'resources/css/app.css',
+                    'isEntry' => true
+                ];
+            }
+        }
+
+        // マニフェストファイルを作成
+        if (!empty($manifest)) {
+            File::put($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         }
     }
 }
