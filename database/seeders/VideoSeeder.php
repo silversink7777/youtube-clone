@@ -220,14 +220,23 @@ class VideoSeeder extends Seeder
             ],
         ];
 
-        foreach ($videos as $videoData) {
-            Video::updateOrCreate(
-                [
-                    'title' => $videoData['title'],
-                    'user_id' => $videoData['user_id']
-                ],
-                $videoData
-            );
+        // 既存の動画数をチェック
+        $existingVideoCount = Video::count();
+        
+        if ($existingVideoCount < 5) {
+            foreach ($videos as $videoData) {
+                Video::updateOrCreate(
+                    [
+                        'title' => $videoData['title'],
+                        'user_id' => $videoData['user_id']
+                    ],
+                    $videoData
+                );
+            }
+            
+            \Log::info('VideoSeeder completed. Created ' . count($videos) . ' videos.');
+        } else {
+            \Log::info('VideoSeeder skipped. ' . $existingVideoCount . ' videos already exist.');
         }
     }
 }
