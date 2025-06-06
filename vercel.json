@@ -40,6 +40,8 @@
         "APP_URL": "https://youtube-clone-nine-sepia.vercel.app",
         "SESSION_SECURE_COOKIE": "true",
         "SANCTUM_STATEFUL_DOMAINS": "https://youtube-clone-nine-sepia.vercel.app",
+        "ASSET_URL": "https://youtube-clone-nine-sepia.vercel.app",
+        "FORCE_HTTPS": "true",
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
         "APP_PACKAGES_CACHE": "/tmp/packages.php",

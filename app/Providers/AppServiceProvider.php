@@ -23,6 +23,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // HTTPS強制設定（本番環境）
+        if (app()->environment('production')) {
+            \URL::forceScheme('https');
+            
+            // 環境変数から取得、または固定URL
+            $assetUrl = env('ASSET_URL', 'https://youtube-clone-nine-sepia.vercel.app');
+            \Illuminate\Support\Facades\URL::forceRootUrl($assetUrl);
+            
+            // アセットURLの強制HTTPS設定
+            if ($assetUrl) {
+                config(['app.asset_url' => $assetUrl]);
+            }
+        }
+
         // Vercel環境でのデータベーステーブル存在チェック
         if (config('database.default') === 'sqlite' && app()->environment('production')) {
             try {
@@ -123,6 +137,14 @@ class AppServiceProvider extends ServiceProvider
                     'file' => $relativePath,
                     'src' => 'resources/css/app.css',
                     'isEntry' => true
+                ];
+            }
+
+            // その他のJSファイル（Vue component files等）
+            if (str_ends_with($filename, '.js') && !str_contains($filename, 'app-')) {
+                $componentName = str_replace(['.js', '_'], ['', '-'], $filename);
+                $manifest['_' . $componentName] = [
+                    'file' => $relativePath
                 ];
             }
         }
