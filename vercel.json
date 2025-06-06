@@ -52,6 +52,7 @@
         "VIEW_COMPILED_PATH": "/tmp",
         "DB_CONNECTION": "sqlite",
         "DB_DATABASE": "/tmp/database.sqlite",
+        "DB_SEED": "true",
         "IMAGE_PROCESSING_ENABLED": "false"
     }
 }
