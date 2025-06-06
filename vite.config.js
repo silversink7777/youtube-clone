@@ -6,7 +6,7 @@ import path from 'path';
 export default defineConfig({
     plugins: [
         laravel({
-            input: 'resources/js/app.js',
+            input: ['resources/js/app.js', 'resources/css/app.css'],
             refresh: true,
         }),
         vue({
@@ -19,13 +19,7 @@ export default defineConfig({
         }),
     ],
     build: {
-        outDir: 'public',
         manifest: true,
-        rollupOptions: {
-            input: {
-                app: 'resources/js/app.js'
-            }
-        }
     },
 
 });
