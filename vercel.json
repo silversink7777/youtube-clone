@@ -9,7 +9,7 @@
         }
     },
     "framework": null,
-    "buildCommand": "npm run build",
+    "buildCommand": "npm install && npm run build && ls -la public/build/",
     "outputDirectory": "public",
     "installCommand": "npm install",
 
