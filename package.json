@@ -6,8 +6,7 @@
         "node": "18.x"
     },
     "scripts": {
-        "build": "vite build && echo 'Build completed. Files in public directory:'",
-        "postbuild": "ls -la public/",
+        "build": "vite build",
         "dev": "vite"
     },
     "devDependencies": {
