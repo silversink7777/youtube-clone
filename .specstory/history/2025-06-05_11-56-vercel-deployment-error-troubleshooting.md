@@ -1155,6 +1155,171 @@ Read file: app/Http/Controllers/VideoController.php
 
 ---
 
+### 6. データベースの初期化とスキップ設定を追加
+
+---
+
+
+
+---
+
+### 7. より詳細なエラー追跡のための追加設定
+
+---
+
+```diff
+- 
++ <?php
++ 
++ // Vercel デバッグ用エンドポイント
++ header('Content-Type: application/json');
++ 
++ $debug_info = [
++     'php_version' => PHP_VERSION,
++     'server_info' => $_SERVER,
++     'environment' => [
++         'APP_KEY' => getenv('APP_KEY') ? 'SET' : 'NOT SET',
++         'APP_URL' => getenv('APP_URL'),
++         'DB_CONNECTION' => getenv('DB_CONNECTION'),
++         'DB_DATABASE' => getenv('DB_DATABASE'),
++     ],
++     'file_checks' => [
++         'public_index' => file_exists(__DIR__ . '/../public/index.php'),
++         'vendor_autoload' => file_exists(__DIR__ . '/../vendor/autoload.php'),
++         'bootstrap_app' => file_exists(__DIR__ . '/../bootstrap/app.php'),
++     ],
++     'current_directory' => __DIR__,
++     'included_files' => get_included_files(),
++     'error_log' => error_get_last()
++ ];
++ 
++ echo json_encode($debug_info, JSON_PRETTY_PRINT); 
+```
+
+---
+
+## エラー分析と対策
+
+### 現在の状況分析：
+
+1. **Laravel アプリケーション構造**: 正常（ルート定義、Controller存在）
+2. **vercel.json設定**: 修正済み（最新PHP runtime、環境変数設定）
+3. **考えられる問題**:
+   - データベースが初期化されていない
+   - 必要なディレクトリ/ファイルがVercel環境に存在しない
+   - Laravelのbootstrap処理でエラーが発生
+
+### 追加の診断方法
+
+デプロイ後に以下のURLにアクセスして詳細な状況を確認してください：
+
+1. **デバッグ情報**: `https://youtube-clone-nine-sepia.vercel.app/api/debug.php`
+2. **Laravel情報**: `https://youtube-clone-nine-sepia.vercel.app/welcome`
+
+### 修正内容
+
+1. **SQLite初期化設定の追加**
+2. **キューとブロードキャスト設定の追加**
+3. **デバッグエンドポイントの作成**
+
+### 次のステップ
+
+1. **再デプロイ実行**: 修正内容をVercelに反映
+2. **デバッグ情報確認**: `/api/debug.php`でサーバー状態確認
+3. **ログ確認**: Vercelダッシュボードでファンクションログを確認
+
+## 追加の確認事項
+
+もしまだエラーが続く場合は、以下を確認してください：
+
+1. **Vercelダッシュボード**: Functions -> Logs でリアルタイムログ確認
+2. **本格的APP_KEY**: 一時的なキーを実際のキーに置き換え
+3. **データベースマイグレーション**: 必要に応じて初期データ作成
+
+修正により、404/500エラーの根本原因が特定できるはずです。デバッグ情報を確認して、具体的な問題箇所を特定しましょう。
+
+---
+
+_**User**_
+
+error during build:
+[vite:load-fallback] Could not load /vercel/path0/vendor/tightenco/ziggy/dist/index.esm.js (imported by resources/js/app.js): ENOENT: no such file or directory, open '/vercel/path0/vendor/tightenco/ziggy/dist/index.esm.js'
+Error: Could not load /vercel/path0/vendor/tightenco/ziggy/dist/index.esm.js (imported by resources/js/app.js): ENOENT: no such file or directory, open '/vercel/path0/vendor/tightenco/ziggy/dist/index.esm.js'
+Error: Command "npm run build" exited with 1
+Exiting build container
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+参照ファイル: `always_applied_workspace_rules`
+
+## タスク分析
+
+<タスク分析>
+- **主要なタスク**: Vercelビルド時のZiggyファイル未発見エラーの修正
+- **守るべきルールのディレクトリ/ファイル**: Laravel開発ルールに従った設定
+- **重要な要件と制約**: 
+  - Ziggyのdist/index.esm.jsファイルが見つからない
+  - Vercelビルド環境でのファイルパス問題
+  - Viteエイリアス設定の再確認が必要
+- **潜在的な課題**: 
+  - Ziggy 2.0のファイル構造変更
+  - Vercel環境での vendor ディレクトリアクセス問題
+  - Vite設定の不整合
+- **具体的なステップ**:
+  1. Ziggyの実際のファイル構造を再確認
+  2. 代替インポート方法の適用
+  3. Vite設定の修正
+  4. .vercelignoreの調整
+- **実行順序**: ファイル存在確認 → インポート方法変更 → 設定修正 → 検証
+</タスク分析>
+
+## タスクの実行
+
+まず、Ziggyの実際のファイル構造を再確認し、適切なインポート方法を見つけます。
+
+### 1. Ziggyディレクトリの詳細確認
+
+---
+
+<details>
+            <summary>Listed directory vendor/tightenco/ziggy/dist • **3** results</summary>
+        
+| Name |
+|-------|
+| 📄 `index.esm.js` |
+| 📄 `index.js` |
+| 📄 `route.umd.js` |
+
+</details>
+
+---
+
+ファイルは存在しています。問題はVercel環境での vendor ディレクトリへのアクセスかもしれません。より安全な方法を試しましょう。
+
+### 2. Ziggyの公開ファイル生成
+
+ZiggyのJavaScript設定を生成し、より確実なインポート方法を使用します：
+
+---
+
+```bash
+php artisan ziggy:generate resources/js/ziggy.js
+```
+
+```
+PS C:\Users\user\Documents\develop\laravel\youtube-clone> php artisan ziggy:generate resources/js/z
+ig                                                        php artisan ziggy:generate resources/js/z
+iggy.js
+```
+
+---
+
 
 
 ---
